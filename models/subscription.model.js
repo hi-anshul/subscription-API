@@ -21,7 +21,6 @@ const subscriptionSchema = new mongoose.Schema({
     frequency: {
         type: String,
         enum: ["daily","weekly","monthly", "yearly"],
-        default: "monthly"
     },
     category: {
         type: String,
@@ -30,7 +29,11 @@ const subscriptionSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
-        enum: ["active","expired","cancelled"],
+        required: true,
+    },
+    status:{
+        type: String,
+        enum: ["active", "cancelled", "expired"],
         default: "active"
     },
     startDate: {
@@ -48,7 +51,7 @@ const subscriptionSchema = new mongoose.Schema({
         validate: {
             validator: function(value) {
                 return value >= this.startDate;
-            },
+            }, 
             message: "End date cannot be before start date"
         }
     },
@@ -61,22 +64,26 @@ const subscriptionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 //Auto-calculate renewalDate based on frequency and startDate
-subscriptionSchema.pre('save', function(next) {
-    if (!this.renewalDate) {
-        const renewalPeriods = {
-            "daily": 1,
-            "weekly": 7,
-            "monthly": 30,
-            "yearly": 365
-        };
-        this.renewalDate = new Date(this.startDate);
-        this.renewalDate.setDate(this.renewalDate.getDate() + renewalPeriods[this.frequency]);
-    }
-    if (this.renewalDate < new Date()) {
-        this.status = "expired";
-    }
-    next();
+subscriptionSchema.pre('save', function () {
+  if (!this.renewalDate) {
+    const renewalPeriods = {
+      daily: 1,
+      weekly: 7,
+      monthly: 30,
+      yearly: 365,
+    };
+
+    this.renewalDate = new Date(this.startDate);
+    this.renewalDate.setDate(
+      this.renewalDate.getDate() + renewalPeriods[this.frequency]
+    );
+  }
+
+  if (this.renewalDate < new Date()) {
+    this.status = 'expired';
+  }
 });
+
 
 
 
